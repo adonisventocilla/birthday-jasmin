@@ -112,7 +112,7 @@ whatsappButton.addEventListener('click', async () => {
   try {
     const canvas = await createCardImage();
     const file = await canvasToFile(canvas);
-    const message = `Invitación al cumpleaños de Jasmin. Te espero el sábado 29/08 a las 5:00 p. m. en Casa de Jasmin (San Juan). Ubicación: ${locationUrl}`;
+    const message = `Invitación al cumpleaños de Jasmin. Te espero el sábado 29/08 a las 5:00 p. m. en Mi casa. Ubicación: ${locationUrl}`;
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ title: 'Cumpleaños de Jasmin', text: message, files: [file] });
