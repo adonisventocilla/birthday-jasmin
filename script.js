@@ -1,14 +1,33 @@
 const form = document.querySelector('#guest-form');
 const nameInput = document.querySelector('#guest-name');
 const nameError = document.querySelector('#name-error');
+const shareMessageInput = document.querySelector('#share-message');
 const greetingName = document.querySelector('#greeting strong');
 const card = document.querySelector('#invitation-card');
-const resetButton = document.querySelector('#reset-button');
+const resetNameButton = document.querySelector('#reset-name-button');
+const resetMessageButton = document.querySelector('#reset-message-button');
 const downloadButton = document.querySelector('#download-button');
 const whatsappButton = document.querySelector('#whatsapp-button');
-const actionButtons = [resetButton, downloadButton, whatsappButton];
+const actionButtons = [resetNameButton, resetMessageButton, downloadButton, whatsappButton];
 const initialName = 'Invitado';
 const locationUrl = 'https://maps.app.goo.gl/Biu3HGNGmLJcbiXt6';
+const defaultShareMessage = shareMessageInput.value;
+const storageKeys = {
+  guestName: 'birthday-jasmin-guest-name',
+  shareMessage: 'birthday-jasmin-share-message'
+};
+
+function savePreferences() {
+  localStorage.setItem(storageKeys.guestName, nameInput.value);
+  localStorage.setItem(storageKeys.shareMessage, shareMessageInput.value);
+}
+
+function restorePreferences() {
+  const savedName = localStorage.getItem(storageKeys.guestName);
+  const savedMessage = localStorage.getItem(storageKeys.shareMessage);
+  if (savedName !== null) nameInput.value = savedName;
+  if (savedMessage !== null) shareMessageInput.value = savedMessage;
+}
 
 function getGuestName() {
   return nameInput.value.trim();
@@ -42,27 +61,50 @@ async function createCardImage() {
   });
 }
 
-function canvasToFile(canvas) {
+function getFileName() {
+  const safeName = (getGuestName() || initialName)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+  return `invitacion-cumple-jasmin-${safeName || 'invitado'}.png`;
+}
+
+function canvasToFile(canvas, fileName = getFileName()) {
   return new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(new File([blob], 'invitacion-cumpleanos-jasmin.png', { type: 'image/png' })), 'image/png');
+    canvas.toBlob((blob) => resolve(new File([blob], fileName, { type: 'image/png' })), 'image/png');
   });
 }
 
-nameInput.addEventListener('input', updateGreeting);
+nameInput.addEventListener('input', () => {
+  updateGreeting();
+  savePreferences();
+});
+shareMessageInput.addEventListener('input', savePreferences);
 nameInput.addEventListener('blur', validateName);
 nameInput.addEventListener('click', () => {
   if (nameInput.value === initialName) {
     nameInput.value = '';
     updateGreeting();
+    savePreferences();
   }
 });
 
-resetButton.addEventListener('click', () => {
+resetNameButton.addEventListener('click', () => {
   nameInput.value = initialName;
+  localStorage.removeItem(storageKeys.guestName);
   nameInput.setAttribute('aria-invalid', 'false');
   nameError.textContent = '';
   updateGreeting();
   nameInput.focus();
+});
+
+resetMessageButton.addEventListener('click', () => {
+  shareMessageInput.value = defaultShareMessage;
+  localStorage.removeItem(storageKeys.shareMessage);
+  nameError.textContent = '';
+  shareMessageInput.focus();
 });
 
 downloadButton.addEventListener('click', async () => {
@@ -83,7 +125,7 @@ downloadButton.addEventListener('click', async () => {
   try {
     const canvas = await createCardImage();
     const link = document.createElement('a');
-    link.download = 'invitacion-cumpleanos-jasmin.png';
+    link.download = getFileName();
     link.href = canvas.toDataURL('image/png');
     link.click();
   } catch (error) {
@@ -111,8 +153,13 @@ whatsappButton.addEventListener('click', async () => {
 
   try {
     const canvas = await createCardImage();
+    const message = shareMessageInput.value.trim();
+    if (!message) {
+      nameError.textContent = 'Escribe un mensaje para compartir.';
+      shareMessageInput.focus();
+      return;
+    }
     const file = await canvasToFile(canvas);
-    const message = `Invitación al cumpleaños de Jasmin. Te espero el sábado 29/08 a las 5:00 p. m. en Mi casa. Ubicación: ${locationUrl}`;
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ title: 'Cumpleaños de Jasmin', text: message, files: [file] });
@@ -133,6 +180,7 @@ whatsappButton.addEventListener('click', async () => {
 });
 
 form.addEventListener('submit', (event) => event.preventDefault());
+restorePreferences();
 updateGreeting();
 
 async function enableActionsWhenReady() {
