@@ -1,0 +1,11 @@
+{
+  "remote.autoForwardPorts": true,
+  "remote.restoreForwardedPorts": true,
+  "remote.portsAttributes": {
+    "5500": {
+      "label": "Invitacion de cumpleanos",
+      "onAutoForward": "openBrowser",
+      "protocol": "http"
+    }
+  }
+}
